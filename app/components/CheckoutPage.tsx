@@ -5,26 +5,8 @@ const CheckoutPage = ({amount}:{amount:number}) => {
     const stripe = useStripe()
     const elements = useElements()
 
-    const [clientSecret, setClientSecret] = useState("")
     const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string>()
-
-    useEffect(() => {
-        const fetchCS = async () => { // Here we fetch the Client Secret
-            const response = await fetch('/api/payment_intent', {
-                method:"POST",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({amount})
-            })
-            const data = await response.json()
-            const returnedCS = await data.clientSecret
-            console.log(data)
-            setClientSecret(returnedCS)
-        }
-        fetchCS()
-    }, [amount])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -48,7 +30,6 @@ const CheckoutPage = ({amount}:{amount:number}) => {
         // Now we can confirm the payment passing the elements, the CS and the params (url to be redirected to)
         const {error} = await stripe.confirmPayment({
             elements,
-            clientSecret,
             confirmParams: {
                 return_url: `http://www.localhost:3000/success`
             }
@@ -56,20 +37,19 @@ const CheckoutPage = ({amount}:{amount:number}) => {
 
         if(error){
             setErrorMessage(error.message)
-        }else {
-            console.log(clientSecret)
-            // Redirected to the url
+            setLoading(false)
         }
+        // Payment will be processed on the server
     }   
     
   return (
     <form onSubmit={handleSubmit}
     className='flex flex-col items-center justify-center gap-4 bg-sky-100 p-20 rounded-md shadow-md'>
-        {clientSecret && <PaymentElement/>}
+        <PaymentElement/>
         <button 
             type='submit'
             className='w-fit p-4 bg-sky-700 shadow-md shadow-black text-sky-100 font-bold rounded-md'>
-                {loading ? `Pay ${amount}€ now` : 'Processing...'}
+                {loading ? 'Processing...' : `Pay ${amount}€ now`}
         </button>
     </form> 
   )
